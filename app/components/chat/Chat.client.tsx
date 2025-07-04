@@ -14,7 +14,6 @@ import { chatStore } from '~/lib/stores/chat';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROMPT_COOKIE_KEY, PROVIDER_LIST } from '~/utils/constants';
 import { cubicEasingFn } from '~/utils/easings';
-import { createScopedLogger, renderLogger } from '~/utils/logger';
 import { BaseChat } from './BaseChat';
 import Cookies from 'js-cookie';
 import { debounce } from '~/utils/debounce';
@@ -26,7 +25,7 @@ import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTempla
 import { logStore } from '~/lib/stores/logs';
 import { streamingState } from '~/lib/stores/streaming';
 import { filesToArtifacts } from '~/utils/fileUtils';
-import { supabaseConnection } from '~/lib/stores/supabase';
+
 import { defaultDesignScheme, type DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 
@@ -35,11 +34,7 @@ const toastAnimation = cssTransition({
   exit: 'animated fadeOutRight',
 });
 
-const logger = createScopedLogger('Chat');
-
 export function Chat() {
-  renderLogger.trace('Chat');
-
   const { ready, initialMessages, storeMessageHistory, importChat, exportChat } = useChatHistory();
   const title = useStore(description);
   useEffect(() => {
@@ -128,10 +123,6 @@ export const ChatImpl = memo(
     const files = useStore(workbenchStore.files);
     const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
     const actionAlert = useStore(workbenchStore.alert);
-    const supabaseConn = useStore(supabaseConnection); // Add this line to get Supabase connection
-    const selectedProject = supabaseConn.stats?.projects?.find(
-      (project) => project.id === supabaseConn.selectedProjectId,
-    );
     const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled } = useSettings();
     const [model, setModel] = useState(() => {
       const savedModel = Cookies.get('selectedModel');
@@ -168,18 +159,10 @@ export const ChatImpl = memo(
         contextOptimization: contextOptimizationEnabled,
         chatMode,
         designScheme,
-        supabase: {
-          isConnected: supabaseConn.isConnected,
-          hasSelectedProject: !!selectedProject,
-          credentials: {
-            supabaseUrl: supabaseConn?.credentials?.supabaseUrl,
-            anonKey: supabaseConn?.credentials?.anonKey,
-          },
-        },
       },
       sendExtraMessageFields: true,
       onError: (e) => {
-        logger.error('Request failed\n\n', e, error);
+        console.log('Request failed\n\n', e, error);
         logStore.logError('Chat request failed', e, {
           component: 'Chat',
           action: 'request',
@@ -204,8 +187,6 @@ export const ChatImpl = memo(
             messageLength: message.content.length,
           });
         }
-
-        logger.debug('Finished streaming');
       },
       initialMessages,
       initialInput: Cookies.get(PROMPT_COOKIE_KEY) || '',

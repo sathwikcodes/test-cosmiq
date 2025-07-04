@@ -1,6 +1,5 @@
 import type { ActionType, BoltAction, BoltActionData, FileAction, ShellAction, SupabaseAction } from '~/types/actions';
 import type { BoltArtifactData } from '~/types/artifact';
-import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 
 const ARTIFACT_TAG_OPEN = '<boltArtifact';
@@ -9,8 +8,6 @@ const ARTIFACT_ACTION_TAG_OPEN = '<boltAction';
 const ARTIFACT_ACTION_TAG_CLOSE = '</boltAction>';
 const BOLT_QUICK_ACTIONS_OPEN = '<bolt-quick-actions>';
 const BOLT_QUICK_ACTIONS_CLOSE = '</bolt-quick-actions>';
-
-const logger = createScopedLogger('MessageParser');
 
 export interface ArtifactCallbackData extends BoltArtifactData {
   messageId: string;
@@ -258,11 +255,11 @@ export class StreamingMessageParser {
               const artifactId = this.#extractAttribute(artifactTag, 'id') as string;
 
               if (!artifactTitle) {
-                logger.warn('Artifact title missing');
+                console.log('Artifact title missing');
               }
 
               if (!artifactId) {
-                logger.warn('Artifact id missing');
+                console.log('Artifact id missing');
               }
 
               state.insideArtifact = true;
@@ -332,7 +329,7 @@ export class StreamingMessageParser {
       const operation = this.#extractAttribute(actionTag, 'operation');
 
       if (!operation || !['migration', 'query'].includes(operation)) {
-        logger.warn(`Invalid or missing operation for Supabase action: ${operation}`);
+        console.log(`Invalid or missing operation for Supabase action: ${operation}`);
         throw new Error(`Invalid Supabase operation: ${operation}`);
       }
 
@@ -342,7 +339,7 @@ export class StreamingMessageParser {
         const filePath = this.#extractAttribute(actionTag, 'filePath');
 
         if (!filePath) {
-          logger.warn('Migration requires a filePath');
+          console.log('Migration requires a filePath');
           throw new Error('Migration requires a filePath');
         }
 
@@ -352,12 +349,12 @@ export class StreamingMessageParser {
       const filePath = this.#extractAttribute(actionTag, 'filePath') as string;
 
       if (!filePath) {
-        logger.debug('File path not specified');
+        console.log('File action requires a filePath');
       }
 
       (actionAttributes as FileAction).filePath = filePath;
     } else if (!['shell', 'start'].includes(actionType)) {
-      logger.warn(`Unknown action type '${actionType}'`);
+      console.log(`Unknown action type '${actionType}'`);
     }
 
     return actionAttributes as FileAction | ShellAction;

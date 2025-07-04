@@ -1,14 +1,14 @@
 {
-  "name": "bolt",
-  "description": "An AI Agent",
+  "name": "cosmiq",
+  "description": "A Web3-inspired builder platform that generates working web applications from natural language prompts",
   "private": true,
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
   "version": "1.0.0",
   "author": {
-    "name": "bolt.diy team",
-    "email": "maintainers@bolt.diy"
+    "name": "Cosmiq team",
+    "email": "maintainers@cosmiq.dev"
   },
   "scripts": {
     "deploy": "npm run build && wrangler pages deploy",
@@ -22,9 +22,9 @@
     "start:unix": "bindings=$(./bindings.sh) && wrangler pages dev ./build/client $bindings",
     "start": "node -e \"const { spawn } = require('child_process'); const isWindows = process.platform === 'win32'; const cmd = isWindows ? 'npm run start:windows' : 'npm run start:unix'; const child = spawn(cmd, { shell: true, stdio: 'inherit' }); child.on('exit', code => process.exit(code));\"",
     "dockerstart": "bindings=$(./bindings.sh) && wrangler pages dev ./build/client $bindings --ip 0.0.0.0 --port 5173 --no-show-interactive-dev-session",
-    "dockerrun": "docker run -it -d --name bolt-ai-live -p 5173:5173 --env-file .env.local bolt-ai",
-    "dockerbuild:prod": "docker build -t bolt-ai:production -t bolt-ai:latest --target bolt-ai-production .",
-    "dockerbuild": "docker build -t bolt-ai:development -t bolt-ai:latest --target bolt-ai-development .",
+    "dockerrun": "docker run -it -d --name cosmiq-live -p 5173:5173 --env-file .env.local cosmiq",
+    "dockerbuild:prod": "docker build -t cosmiq:production -t cosmiq:latest --target cosmiq-production .",
+    "dockerbuild": "docker build -t cosmiq:development -t cosmiq:latest --target cosmiq-development .",
     "typecheck": "tsc",
     "typegen": "wrangler types",
     "preview": "pnpm run build && pnpm run start",
@@ -165,7 +165,6 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@types/diff": "^5.2.3",
-    "@types/dom-speech-recognition": "^0.0.4",
     "@types/electron": "^1.6.12",
     "@types/file-saver": "^2.0.7",
     "@types/js-cookie": "^3.0.6",

@@ -10,19 +10,7 @@ import { Workbench } from '~/components/workbench/Workbench.client';
 import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
 import { Messages } from './Messages.client';
-// Inline getApiKeysFromCookies function
-function getApiKeysFromCookies() {
-  try {
-    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.split('=');
-      acc[key.trim()] = decodeURIComponent(value);
-      return acc;
-    }, {} as Record<string, string>);
-    return cookies.apiKeys ? JSON.parse(cookies.apiKeys) : {};
-  } catch {
-    return {};
-  }
-}
+import { getApiKeysFromCookies } from './APIKeyManager';
 import Cookies from 'js-cookie';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import styles from './BaseChat.module.scss';
@@ -162,7 +150,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
         try {
           parsedApiKeys = getApiKeysFromCookies();
-          setApiKeys(parsedApiKeys || {});
+          setApiKeys(parsedApiKeys);
         } catch (error) {
           console.error('Error loading API keys from cookies:', error);
           Cookies.remove('apiKeys');

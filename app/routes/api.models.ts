@@ -62,23 +62,38 @@ export async function loader({
 
   let modelList: ModelInfo[] = [];
 
-  if (params.provider) {
-    // Only update models for the specific provider
-    const provider = llmManager.getProvider(params.provider);
+  try {
+    if (params.provider) {
+      // Only update models for the specific provider
+      const provider = llmManager.getProvider(params.provider);
 
-    if (provider) {
-      modelList = await llmManager.getModelListFromProvider(provider, {
+      if (provider) {
+        modelList = await llmManager.getModelListFromProvider(provider, {
+          apiKeys,
+          providerSettings,
+          serverEnv: context.cloudflare?.env,
+        });
+      }
+    } else {
+      // Update all models
+      modelList = await llmManager.updateModelList({
         apiKeys,
         providerSettings,
         serverEnv: context.cloudflare?.env,
       });
     }
-  } else {
-    // Update all models
-    modelList = await llmManager.updateModelList({
-      apiKeys,
-      providerSettings,
-      serverEnv: context.cloudflare?.env,
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    // Return static models only if dynamic model fetching fails
+    modelList = llmManager.getStaticModelList();
+  }
+
+  // Filter out providers that don't have API keys configured
+  if (!apiKeys || Object.keys(apiKeys).length === 0) {
+    // Only return static models if no API keys are configured
+    modelList = modelList.filter((model) => {
+      const provider = llmManager.getProvider(model.provider);
+      return provider && provider.staticModels && provider.staticModels.length > 0;
     });
   }
 

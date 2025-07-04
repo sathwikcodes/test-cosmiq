@@ -19,7 +19,6 @@ import { Slider, type SliderOptions } from '~/components/ui/Slider';
 import { workbenchStore, type WorkbenchViewType } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
-import { renderLogger } from '~/utils/logger';
 import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
@@ -280,8 +279,6 @@ const FileModifiedDropdown = memo(
 );
 
 export const Workbench = memo(({ chatStarted, isStreaming, actionRunner, setSelectedElement }: WorkspaceProps) => {
-  renderLogger.trace('Workbench');
-
   const [isSyncing, setIsSyncing] = useState(false);
   const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
 

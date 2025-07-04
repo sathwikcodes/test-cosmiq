@@ -2,10 +2,7 @@ import { generateText, type CoreTool, type GenerateTextResult, type Message } fr
 import type { IProviderSetting } from '~/types/model';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROVIDER_LIST } from '~/utils/constants';
 import { extractCurrentContext, extractPropertiesFromMessage, simplifyBoltActions } from './utils';
-import { createScopedLogger } from '~/utils/logger';
 import { LLMManager } from '~/lib/modules/llm/manager';
-
-const logger = createScopedLogger('create-summary');
 
 export async function createSummary(props: {
   messages: Message[];
@@ -61,7 +58,7 @@ export async function createSummary(props: {
 
     if (!modelDetails) {
       // Fallback to first model
-      logger.warn(
+      console.log(
         `MODEL [${currentModel}] not found in provider [${provider.name}]. Falling back to first model. ${modelsList[0].name}`,
       );
       modelDetails = modelsList[0];
@@ -91,8 +88,6 @@ ${summary.summary}`;
       slicedMessages = processedMessages.slice(index + 1);
     }
   }
-
-  logger.debug('Sliced Messages:', slicedMessages.length);
 
   const extractTextContent = (message: Message) =>
     Array.isArray(message.content)

@@ -6,7 +6,6 @@ import type { IProviderSetting } from '~/types/model';
 import { PromptLibrary } from '~/lib/common/prompt-library';
 import { allowedHTMLElements } from '~/utils/markdown';
 import { LLMManager } from '~/lib/modules/llm/manager';
-import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
@@ -23,8 +22,6 @@ export interface StreamingOptions extends Omit<Parameters<typeof _streamText>[0]
     };
   };
 }
-
-const logger = createScopedLogger('stream-text');
 
 export async function streamText(props: {
   messages: Omit<Message, 'id'>[];
@@ -106,7 +103,7 @@ export async function streamText(props: {
 
     if (!modelDetails) {
       // Fallback to first model
-      logger.warn(
+      console.log(
         `MODEL [${currentModel}] not found in provider [${provider.name}]. Falling back to first model. ${modelsList[0].name}`,
       );
       modelDetails = modelsList[0];
@@ -114,9 +111,6 @@ export async function streamText(props: {
   }
 
   const dynamicMaxTokens = modelDetails && modelDetails.maxTokenAllowed ? modelDetails.maxTokenAllowed : MAX_TOKENS;
-  logger.info(
-    `Max tokens for model ${modelDetails.name} is ${dynamicMaxTokens} based on ${modelDetails.maxTokenAllowed} or ${MAX_TOKENS}`,
-  );
 
   let systemPrompt =
     PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
@@ -124,11 +118,6 @@ export async function streamText(props: {
       allowedHtmlElements: allowedHTMLElements,
       modificationTagName: MODIFICATIONS_TAG_NAME,
       designScheme,
-      supabase: {
-        isConnected: options?.supabaseConnection?.isConnected || false,
-        hasSelectedProject: options?.supabaseConnection?.hasSelectedProject || false,
-        credentials: options?.supabaseConnection?.credentials || undefined,
-      },
     }) ?? getSystemPrompt();
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
@@ -187,10 +176,6 @@ export async function streamText(props: {
   } else {
     console.log('No locked files found from any source for prompt.');
   }
-
-  logger.info(`Sending llm call to ${provider.name} with model ${modelDetails.name}`);
-
-  // console.log(systemPrompt, processedMessages);
 
   return await _streamText({
     model: provider.getModelInstance({

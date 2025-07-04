@@ -5,7 +5,6 @@ import type { FileMap } from '~/lib/stores/files';
 import { classNames } from '~/utils/classNames';
 import { WORK_DIR } from '~/utils/constants';
 import { cubicEasingFn } from '~/utils/easings';
-import { renderLogger } from '~/utils/logger';
 import FileTree from './FileTree';
 
 const WORK_DIR_REGEX = new RegExp(`^${WORK_DIR.split('/').slice(0, -1).join('/').replaceAll('/', '\\/')}/`);
@@ -36,8 +35,6 @@ const contextMenuVariants = {
 } satisfies Variants;
 
 export const FileBreadcrumb = memo<FileBreadcrumbProps>(({ files, pathSegments = [], onFileSelect }) => {
-  renderLogger.trace('FileBreadcrumb');
-
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const contextMenuRef = useRef<HTMLDivElement | null>(null);

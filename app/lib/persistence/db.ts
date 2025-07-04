@@ -1,5 +1,4 @@
 import type { Message } from 'ai';
-import { createScopedLogger } from '~/utils/logger';
 import type { ChatHistoryItem } from './useChatHistory';
 import type { Snapshot } from './types'; // Import Snapshot type
 
@@ -9,8 +8,6 @@ export interface IChatMetadata {
   netlifySiteId?: string;
 }
 
-const logger = createScopedLogger('ChatHistory');
-
 // this is used at the top level and never rejects
 export async function openDatabase(): Promise<IDBDatabase | undefined> {
   if (typeof indexedDB === 'undefined') {
@@ -19,7 +16,7 @@ export async function openDatabase(): Promise<IDBDatabase | undefined> {
   }
 
   return new Promise((resolve) => {
-    const request = indexedDB.open('boltHistory', 2);
+    const request = indexedDB.open('cosmiqHistory', 2);
 
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -46,7 +43,7 @@ export async function openDatabase(): Promise<IDBDatabase | undefined> {
 
     request.onerror = (event: Event) => {
       resolve(undefined);
-      logger.error((event.target as IDBOpenDBRequest).error);
+      console.log((event.target as IDBOpenDBRequest).error);
     };
   });
 }

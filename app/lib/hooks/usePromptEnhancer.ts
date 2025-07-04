@@ -1,8 +1,5 @@
 import { useState } from 'react';
 import type { ProviderInfo } from '~/types/model';
-import { createScopedLogger } from '~/utils/logger';
-
-const logger = createScopedLogger('usePromptEnhancement');
 
 export function usePromptEnhancer() {
   const [enhancingPrompt, setEnhancingPrompt] = useState(false);
@@ -60,8 +57,6 @@ export function usePromptEnhancer() {
 
           _input += decoder.decode(value);
 
-          logger.trace('Set input', _input);
-
           setInput(_input);
         }
       } catch (error) {
@@ -69,7 +64,7 @@ export function usePromptEnhancer() {
         setInput(originalInput);
       } finally {
         if (_error) {
-          logger.error(_error);
+          console.log(_error);
         }
 
         setEnhancingPrompt(false);

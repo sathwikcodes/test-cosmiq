@@ -2,12 +2,9 @@ import type { WebContainer } from '@webcontainer/api';
 import { path as nodePath } from '~/utils/path';
 import { atom, map, type MapStore } from 'nanostores';
 import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction, SupabaseAlert } from '~/types/actions';
-import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
-
-const logger = createScopedLogger('ActionRunner');
 
 export type ActionStatus = 'pending' | 'running' | 'complete' | 'aborted' | 'failed';
 
@@ -196,7 +193,7 @@ export class ActionRunner {
               }
 
               this.#updateAction(actionId, { status: 'failed', error: 'Action failed' });
-              logger.error(`[${action.type}]:Action failed\n\n`, err);
+              console.log(`[${action.type}]:Action failed\n\n`, err);
 
               if (!(err instanceof ActionCommandError)) {
                 return;
@@ -229,7 +226,7 @@ export class ActionRunner {
       }
 
       this.#updateAction(actionId, { status: 'failed', error: 'Action failed' });
-      logger.error(`[${action.type}]:Action failed\n\n`, error);
+      console.log(`[${action.type}]:Action failed\n\n`, error);
 
       if (!(error instanceof ActionCommandError)) {
         return;
@@ -260,10 +257,8 @@ export class ActionRunner {
     }
 
     const resp = await shell.executeCommand(this.runnerId.get(), action.content, () => {
-      logger.debug(`[${action.type}]:Aborting Action\n\n`, action);
       action.abort();
     });
-    logger.debug(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
     if (resp?.exitCode != 0) {
       throw new ActionCommandError(`Failed To Execute Shell Command`, resp?.output || 'No Output Available');
@@ -287,10 +282,8 @@ export class ActionRunner {
     }
 
     const resp = await shell.executeCommand(this.runnerId.get(), action.content, () => {
-      logger.debug(`[${action.type}]:Aborting Action\n\n`, action);
       action.abort();
     });
-    logger.debug(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
     if (resp?.exitCode != 0) {
       throw new ActionCommandError('Failed To Start Application', resp?.output || 'No Output Available');
@@ -315,17 +308,15 @@ export class ActionRunner {
     if (folder !== '.') {
       try {
         await webcontainer.fs.mkdir(folder, { recursive: true });
-        logger.debug('Created folder', folder);
       } catch (error) {
-        logger.error('Failed to create folder\n\n', error);
+        console.log('Failed to create folder\n\n', error);
       }
     }
 
     try {
       await webcontainer.fs.writeFile(relativePath, action.content);
-      logger.debug(`File written ${relativePath}`);
     } catch (error) {
-      logger.error('Failed to write file\n\n', error);
+      console.log('Failed to write file\n\n', error);
     }
   }
 
@@ -343,7 +334,7 @@ export class ActionRunner {
 
       return JSON.parse(content);
     } catch (error) {
-      logger.error('Failed to get file history:', error);
+      console.log('Failed to get file history:', error);
       return null;
     }
   }
@@ -435,18 +426,17 @@ export class ActionRunner {
       try {
         await webcontainer.fs.readdir(dirPath);
         buildDir = dirPath;
-        logger.debug(`Found build directory: ${buildDir}`);
+
         break;
       } catch (error) {
-        // Directory doesn't exist, try the next one
-        logger.debug(`Build directory ${dir} not found, trying next option. ${error}`);
+        // Directory does not exist, continue to the next one
+        console.debug(`Build directory ${dirPath} not found, trying next...`);
       }
     }
 
     // If no build directory was found, use the default (dist)
     if (!buildDir) {
       buildDir = nodePath.join(webcontainer.workdir, 'dist');
-      logger.debug(`No build directory found, defaulting to: ${buildDir}`);
     }
 
     return {
@@ -457,7 +447,6 @@ export class ActionRunner {
   }
   async handleSupabaseAction(action: SupabaseAction) {
     const { operation, content, filePath } = action;
-    logger.debug('[Supabase Action]:', { operation, filePath, content });
 
     switch (operation) {
       case 'migration':
@@ -513,7 +502,6 @@ export class ActionRunner {
     },
   ): void {
     if (!this.onDeployAlert) {
-      logger.debug('No deploy alert handler registered');
       return;
     }
 

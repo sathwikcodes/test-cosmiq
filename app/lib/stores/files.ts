@@ -6,7 +6,6 @@ import { path } from '~/utils/path';
 import { bufferWatchEvents } from '~/utils/buffer';
 import { WORK_DIR } from '~/utils/constants';
 import { computeFileModifications } from '~/utils/diff';
-import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import {
   addLockedFile,
@@ -21,8 +20,6 @@ import {
   clearCache,
 } from '~/lib/persistence/lockedFiles';
 import { getCurrentChatId } from '~/utils/fileLocks';
-
-const logger = createScopedLogger('FilesStore');
 
 const utf8TextDecoder = new TextDecoder('utf8', { fatal: true });
 
@@ -90,7 +87,7 @@ export class FilesStore {
         }
       }
     } catch (error) {
-      logger.error('Failed to load deleted paths from localStorage', error);
+      console.log('Failed to load deleted paths from localStorage', error);
     }
 
     // Load locked files from localStorage
@@ -112,7 +109,6 @@ export class FilesStore {
         const currentChatId = getCurrentChatId();
 
         if (currentChatId !== lastChatId) {
-          logger.info(`Chat ID changed from ${lastChatId} to ${currentChatId}, reloading locks`);
           lastChatId = currentChatId;
           this.#loadLockedFiles(currentChatId);
         }
@@ -144,11 +140,11 @@ export class FilesStore {
       const lockedFolders = lockedItems.filter((item) => item.isFolder);
 
       if (lockedItems.length === 0) {
-        logger.info(`No locked items found for chat ID: ${currentChatId}`);
+        console.info(`No locked items found for chat ID: ${currentChatId}`);
         return;
       }
 
-      logger.info(
+      console.info(
         `Found ${lockedFiles.length} locked files and ${lockedFolders.length} locked folders for chat ID: ${currentChatId}`,
       );
 
@@ -187,9 +183,9 @@ export class FilesStore {
       }
 
       const endTime = performance.now();
-      logger.info(`Loaded locked items in ${Math.round(endTime - startTime)}ms`);
+      console.info(`Loaded locked items in ${Math.round(endTime - startTime)}ms`);
     } catch (error) {
-      logger.error('Failed to load locked files from localStorage', error);
+      console.log('Failed to load locked files from localStorage', error);
     }
   }
 
@@ -237,7 +233,7 @@ export class FilesStore {
     const currentChatId = chatId || getCurrentChatId();
 
     if (!file) {
-      logger.error(`Cannot lock non-existent file: ${filePath}`);
+      console.log(`Cannot lock non-existent file: ${filePath}`);
       return false;
     }
 
@@ -250,7 +246,7 @@ export class FilesStore {
     // Persist to localStorage with chat ID
     addLockedFile(currentChatId, filePath);
 
-    logger.info(`File locked: ${filePath} for chat: ${currentChatId}`);
+    console.info(`File locked: ${filePath} for chat: ${currentChatId}`);
 
     return true;
   }
@@ -267,7 +263,7 @@ export class FilesStore {
     const currentChatId = chatId || getCurrentChatId();
 
     if (!folder || folder.type !== 'folder') {
-      logger.error(`Cannot lock non-existent folder: ${folderPath}`);
+      console.log(`Cannot lock non-existent folder: ${folderPath}`);
       return false;
     }
 
@@ -288,7 +284,7 @@ export class FilesStore {
     // Persist to localStorage with chat ID
     addLockedFolder(currentChatId, folderPath);
 
-    logger.info(`Folder locked: ${folderPath} for chat: ${currentChatId}`);
+    console.info(`Folder locked: ${folderPath} for chat: ${currentChatId}`);
 
     return true;
   }
@@ -304,7 +300,7 @@ export class FilesStore {
     const currentChatId = chatId || getCurrentChatId();
 
     if (!file) {
-      logger.error(`Cannot unlock non-existent file: ${filePath}`);
+      console.log(`Cannot unlock non-existent file: ${filePath}`);
       return false;
     }
 
@@ -318,7 +314,7 @@ export class FilesStore {
     // Remove from localStorage with chat ID
     removeLockedFile(currentChatId, filePath);
 
-    logger.info(`File unlocked: ${filePath} for chat: ${currentChatId}`);
+    console.info(`File unlocked: ${filePath} for chat: ${currentChatId}`);
 
     return true;
   }
@@ -335,7 +331,7 @@ export class FilesStore {
     const currentChatId = chatId || getCurrentChatId();
 
     if (!folder || folder.type !== 'folder') {
-      logger.error(`Cannot unlock non-existent folder: ${folderPath}`);
+      console.log(`Cannot unlock non-existent folder: ${folderPath}`);
       return false;
     }
 
@@ -374,7 +370,7 @@ export class FilesStore {
     // Remove from localStorage with chat ID
     removeLockedFolder(currentChatId, folderPath);
 
-    logger.info(`Folder unlocked: ${folderPath} for chat: ${currentChatId}`);
+    console.info(`Folder unlocked: ${folderPath} for chat: ${currentChatId}`);
 
     return true;
   }
@@ -581,9 +577,9 @@ export class FilesStore {
         isLocked,
       });
 
-      logger.info('File updated');
+      console.info('File updated');
     } catch (error) {
-      logger.error('Failed to update file content\n\n', error);
+      console.log('Failed to update file content\n\n', error);
 
       throw error;
     }
@@ -807,11 +803,11 @@ export class FilesStore {
         this.#modifiedFiles.set(filePath, content as string);
       }
 
-      logger.info(`File created: ${filePath}`);
+      console.info(`File created: ${filePath}`);
 
       return true;
     } catch (error) {
-      logger.error('Failed to create file\n\n', error);
+      console.log('Failed to create file\n\n', error);
       throw error;
     }
   }
@@ -830,11 +826,11 @@ export class FilesStore {
 
       this.files.setKey(folderPath, { type: 'folder' });
 
-      logger.info(`Folder created: ${folderPath}`);
+      console.info(`Folder created: ${folderPath}`);
 
       return true;
     } catch (error) {
-      logger.error('Failed to create folder\n\n', error);
+      console.log('Failed to create folder\n\n', error);
       throw error;
     }
   }
@@ -862,11 +858,11 @@ export class FilesStore {
 
       this.#persistDeletedPaths();
 
-      logger.info(`File deleted: ${filePath}`);
+      console.info(`File deleted: ${filePath}`);
 
       return true;
     } catch (error) {
-      logger.error('Failed to delete file\n\n', error);
+      console.log('Failed to delete file\n\n', error);
       throw error;
     }
   }
@@ -907,11 +903,11 @@ export class FilesStore {
 
       this.#persistDeletedPaths();
 
-      logger.info(`Folder deleted: ${folderPath}`);
+      console.info(`Folder deleted: ${folderPath}`);
 
       return true;
     } catch (error) {
-      logger.error('Failed to delete folder\n\n', error);
+      console.log('Failed to delete folder\n\n', error);
       throw error;
     }
   }
@@ -923,7 +919,7 @@ export class FilesStore {
         localStorage.setItem('bolt-deleted-paths', JSON.stringify([...this.#deletedPaths]));
       }
     } catch (error) {
-      logger.error('Failed to persist deleted paths to localStorage', error);
+      console.log('Failed to persist deleted paths to localStorage', error);
     }
   }
 }

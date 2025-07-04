@@ -1,9 +1,5 @@
-import { createScopedLogger } from '~/utils/logger';
-
-const logger = createScopedLogger('LockedFiles');
-
 // Key for storing locked files in localStorage
-export const LOCKED_FILES_KEY = 'bolt.lockedFiles';
+export const LOCKED_FILES_KEY = 'cosmiq.lockedFiles';
 
 export interface LockedItem {
   chatId: string; // Chat ID to scope locks to a specific project
@@ -68,7 +64,7 @@ function initializeCache(): LockedItem[] {
 
     return [];
   } catch (error) {
-    logger.error('Failed to initialize locked items cache', error);
+    console.log('Failed to initialize locked items cache', error);
     lockedItemsCache = [];
 
     return [];
@@ -112,10 +108,9 @@ export function saveLockedItems(items: LockedItem[]): void {
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(LOCKED_FILES_KEY, JSON.stringify(items));
-        logger.info(`Saved ${items.length} locked items to localStorage`);
       }
     } catch (error) {
-      logger.error('Failed to save locked items to localStorage', error);
+      console.log('Failed to save locked items to localStorage', error);
     }
   }, SAVE_DEBOUNCE_MS);
 }
@@ -156,8 +151,6 @@ export function addLockedItem(chatId: string, path: string, isFolder: boolean = 
 
   // Save the updated list (this will update the cache and maps)
   saveLockedItems(filteredItems);
-
-  logger.info(`Added locked ${isFolder ? 'folder' : 'file'}: ${path} for chat: ${chatId}`);
 }
 
 /**
@@ -195,8 +188,6 @@ export function removeLockedItem(chatId: string, path: string): void {
 
   // Save the updated list (this will update the cache and maps)
   saveLockedItems(filteredItems);
-
-  logger.info(`Removed lock for: ${path} in chat: ${chatId}`);
 }
 
 /**
@@ -411,13 +402,12 @@ export function migrateLegacyLocks(currentChatId: string): void {
           // Only save if we found and updated legacy items
           if (hasLegacyItems) {
             saveLockedItems(updatedItems);
-            logger.info(`Migrated ${updatedItems.length} legacy locks to chat ID: ${currentChatId}`);
           }
         }
       }
     }
   } catch (error) {
-    logger.error('Failed to migrate legacy locks', error);
+    console.log('Failed to migrate legacy locks', error);
   }
 }
 
@@ -429,7 +419,6 @@ export function migrateLegacyLocks(currentChatId: string): void {
 export function clearCache(): void {
   lockedItemsCache = null;
   lockedItemsMap.clear();
-  logger.info('Cleared locked items cache');
 }
 
 /**
@@ -461,8 +450,6 @@ export function batchLockItems(chatId: string, items: Array<{ path: string; isFo
   // Combine and save
   const updatedItems = [...filteredItems, ...newItems];
   saveLockedItems(updatedItems);
-
-  logger.info(`Batch locked ${items.length} items for chat: ${chatId}`);
 }
 
 /**
@@ -493,8 +480,6 @@ export function batchUnlockItems(chatId: string, paths: string[]): void {
 
   // Save the updated list
   saveLockedItems(filteredItems);
-
-  logger.info(`Batch unlocked ${paths.length} items for chat: ${chatId}`);
 }
 
 /**
@@ -504,7 +489,6 @@ export function batchUnlockItems(chatId: string, paths: string[]): void {
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
     if (event.key === LOCKED_FILES_KEY) {
-      logger.info('Detected localStorage change for locked items, refreshing cache');
       clearCache();
     }
   });

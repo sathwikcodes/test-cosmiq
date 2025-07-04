@@ -16,15 +16,14 @@ import type { FileMap } from '~/lib/stores/files';
 import type { FileHistory } from '~/types/actions';
 import { themeStore } from '~/lib/stores/theme';
 import { WORK_DIR } from '~/utils/constants';
-import { renderLogger } from '~/utils/logger';
 import { isMobile } from '~/utils/mobile';
 import { FileBreadcrumb } from './FileBreadcrumb';
 import { FileTree } from './FileTree';
 import { DEFAULT_TERMINAL_SIZE, TerminalTabs } from './terminal/TerminalTabs';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { Search } from './Search'; // <-- Ensure Search is imported
-import { classNames } from '~/utils/classNames'; // <-- Import classNames if not already present
-import { LockManager } from './LockManager'; // <-- Import LockManager
+import { Search } from './Search';
+import { classNames } from '~/utils/classNames';
+import { LockManager } from './LockManager';
 
 interface EditorPanelProps {
   files?: FileMap;
@@ -58,8 +57,6 @@ export const EditorPanel = memo(
     onFileSave,
     onFileReset,
   }: EditorPanelProps) => {
-    renderLogger.trace('EditorPanel');
-
     const theme = useStore(themeStore);
     const showTerminal = useStore(workbenchStore.showTerminal);
 

@@ -1,15 +1,12 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { FileMap } from '~/lib/stores/files';
 import { classNames } from '~/utils/classNames';
-import { createScopedLogger, renderLogger } from '~/utils/logger';
 import * as ContextMenu from '@radix-ui/react-context-menu';
 import type { FileHistory } from '~/types/actions';
 import { diffLines, type Change } from 'diff';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { toast } from 'react-toastify';
 import { path } from '~/utils/path';
-
-const logger = createScopedLogger('FileTree');
 
 const NODE_PADDING_LEFT = 8;
 const DEFAULT_HIDDEN_FILES = [/\/node_modules\//, /\/\.next/, /\/\.astro/];
@@ -50,8 +47,6 @@ export const FileTree = memo(
     unsavedFiles,
     fileHistory = {},
   }: Props) => {
-    renderLogger.trace('FileTree');
-
     const computedHiddenFiles = useMemo(() => [...DEFAULT_HIDDEN_FILES, ...(hiddenFiles ?? [])], [hiddenFiles]);
 
     const fileList = useMemo(() => {
@@ -130,7 +125,7 @@ export const FileTree = memo(
       try {
         navigator.clipboard.writeText(fileOrFolder.fullPath);
       } catch (error) {
-        logger.error(error);
+        console.log(error);
       }
     };
 
@@ -138,7 +133,7 @@ export const FileTree = memo(
       try {
         navigator.clipboard.writeText(fileOrFolder.fullPath.substring((rootFolder || '').length));
       } catch (error) {
-        logger.error(error);
+        console.log(error);
       }
     };
 
@@ -341,7 +336,7 @@ function FileContextMenu({
             }
           } catch (error) {
             toast.error(`Error uploading ${file.name}`);
-            logger.error(error);
+            console.log(error);
           }
         }
       }
@@ -398,7 +393,7 @@ function FileContextMenu({
       }
     } catch (error) {
       toast.error(`Error deleting ${isFolder ? 'folder' : 'file'}`);
-      logger.error(error);
+      console.log(error);
     }
   };
 
@@ -418,7 +413,7 @@ function FileContextMenu({
       }
     } catch (error) {
       toast.error(`Error locking file`);
-      logger.error(error);
+      console.log(error);
     }
   };
 
@@ -438,7 +433,7 @@ function FileContextMenu({
       }
     } catch (error) {
       toast.error(`Error unlocking file`);
-      logger.error(error);
+      console.log(error);
     }
   };
 
@@ -458,7 +453,7 @@ function FileContextMenu({
       }
     } catch (error) {
       toast.error(`Error locking folder`);
-      logger.error(error);
+      console.log(error);
     }
   };
 
@@ -478,7 +473,7 @@ function FileContextMenu({
       }
     } catch (error) {
       toast.error(`Error unlocking folder`);
-      logger.error(error);
+      console.log(error);
     }
   };
 
@@ -855,8 +850,6 @@ function isHiddenFile(filePath: string, fileName: string, hiddenFiles: Array<str
  * @returns A new array of nodes sorted in depth-first order.
  */
 function sortFileList(rootFolder: string, nodeList: Node[], hideRoot: boolean): Node[] {
-  logger.trace('sortFileList');
-
   const nodeMap = new Map<string, Node>();
   const childrenMap = new Map<string, Node[]>();
 

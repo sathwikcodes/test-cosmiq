@@ -20,15 +20,12 @@ import { memo, useEffect, useRef, useState, type MutableRefObject } from 'react'
 import type { Theme } from '~/types/theme';
 import { classNames } from '~/utils/classNames';
 import { debounce } from '~/utils/debounce';
-import { createScopedLogger, renderLogger } from '~/utils/logger';
 import { isFileLocked, getCurrentChatId } from '~/utils/fileLocks';
 import { BinaryContent } from './BinaryContent';
 import { getTheme, reconfigureTheme } from './cm-theme';
 import { indentKeyBinding } from './indent';
 import { getLanguage } from './languages';
 import { createEnvMaskingExtension } from './EnvMasking';
-
-const logger = createScopedLogger('CodeMirrorEditor');
 
 // Create a module-level reference to the current document for use in tooltip functions
 let currentDocRef: EditorDocument | undefined;
@@ -137,8 +134,6 @@ export const CodeMirrorEditor = memo(
     settings,
     className = '',
   }: Props) => {
-    renderLogger.trace('CodeMirrorEditor');
-
     const [languageCompartment] = useState(new Compartment());
 
     // Add a compartment for the env masking extension
@@ -190,10 +185,10 @@ export const CodeMirrorEditor = memo(
             });
             viewRef.current.focus();
           } else {
-            logger.warn(`Invalid line number ${line + 1} in ${totalLines}-line document`);
+            console.warn(`Invalid line number ${line + 1} in ${totalLines}-line document`);
           }
         } catch (error) {
-          logger.error('Error scrolling to line:', error);
+          console.error('Error scrolling to line:', error);
         }
       } else if (typeof doc.scroll?.top === 'number' || typeof doc.scroll?.left === 'number') {
         viewRef.current.scrollDOM.scrollTo(doc.scroll.left ?? 0, doc.scroll.top ?? 0);
@@ -274,7 +269,7 @@ export const CodeMirrorEditor = memo(
       }
 
       if (doc.filePath === '') {
-        logger.warn('File path should not be empty');
+        console.warn('Document filePath is empty, cannot set editor state');
       }
 
       let state = editorStates.get(doc.filePath);
@@ -490,10 +485,10 @@ function setEditorDocument(
             });
             view.focus();
           } else {
-            logger.warn(`Invalid line number ${line + 1} in ${totalLines}-line document`);
+            console.warn(`Invalid line number ${line + 1} in ${totalLines}-line document`);
           }
         } catch (error) {
-          logger.error('Error scrolling to line:', error);
+          console.log('Error scrolling to line:', error);
         }
 
         return;

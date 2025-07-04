@@ -3,10 +3,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { forwardRef, memo, useEffect, useImperativeHandle, useRef } from 'react';
 import type { Theme } from '~/lib/stores/theme';
-import { createScopedLogger } from '~/utils/logger';
 import { getTerminalTheme } from './theme';
-
-const logger = createScopedLogger('Terminal');
 
 export interface TerminalRef {
   reloadStyles: () => void;
@@ -54,8 +51,6 @@ export const Terminal = memo(
         });
 
         resizeObserver.observe(element);
-
-        logger.debug(`Attach [${id}]`);
 
         onTerminalReady?.(terminal);
 

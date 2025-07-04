@@ -1,11 +1,10 @@
 import { type ActionFunctionArgs } from '@remix-run/cloudflare';
 import { createDataStream, generateId } from 'ai';
-import { MAX_RESPONSE_SEGMENTS, MAX_TOKENS, type FileMap } from '~/lib/.server/llm/constants';
+import { MAX_RESPONSE_SEGMENTS, type FileMap } from '~/lib/.server/llm/constants';
 import { CONTINUE_PROMPT } from '~/lib/common/prompts/prompts';
 import { streamText, type Messages, type StreamingOptions } from '~/lib/.server/llm/stream-text';
 import SwitchableStream from '~/lib/.server/llm/switchable-stream';
 import type { IProviderSetting } from '~/types/model';
-import { createScopedLogger } from '~/utils/logger';
 import { getFilePaths, selectContext } from '~/lib/.server/llm/select-context';
 import type { ContextAnnotation, ProgressAnnotation } from '~/types/context';
 import { WORK_DIR } from '~/utils/constants';
@@ -16,8 +15,6 @@ import type { DesignScheme } from '~/types/design-scheme';
 export async function action(args: ActionFunctionArgs) {
   return chatAction(args);
 }
-
-const logger = createScopedLogger('api.chat');
 
 function parseCookies(cookieHeader: string): Record<string, string> {
   const cookies: Record<string, string> = {};
@@ -38,21 +35,13 @@ function parseCookies(cookieHeader: string): Record<string, string> {
 }
 
 async function chatAction({ context, request }: ActionFunctionArgs) {
-  const { messages, files, promptId, contextOptimization, supabase, chatMode, designScheme } = await request.json<{
+  const { messages, files, promptId, contextOptimization, chatMode, designScheme } = await request.json<{
     messages: Messages;
     files: any;
     promptId?: string;
     contextOptimization: boolean;
     chatMode: 'discuss' | 'build';
     designScheme?: DesignScheme;
-    supabase?: {
-      isConnected: boolean;
-      hasSelectedProject: boolean;
-      credentials?: {
-        anonKey?: string;
-        supabaseUrl?: string;
-      };
-    };
   }>();
 
   const cookieHeader = request.headers.get('Cookie');
@@ -72,9 +61,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
   let progressCounter: number = 1;
 
   try {
-    const totalMessageContent = messages.reduce((acc, message) => acc + message.content, '');
-    logger.debug(`Total message length: ${totalMessageContent.split(' ').length}, words`);
-
     let lastChunk: string | undefined = undefined;
 
     const dataStream = createDataStream({
@@ -89,7 +75,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         }
 
         if (filePaths.length > 0 && contextOptimization) {
-          logger.debug('Generating Chat Summary');
           dataStream.writeData({
             type: 'progress',
             label: 'summary',
@@ -110,7 +95,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             contextOptimization,
             onFinish(resp) {
               if (resp.usage) {
-                logger.debug('createSummary token usage', JSON.stringify(resp.usage));
                 cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
                 cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
                 cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
@@ -132,7 +116,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           } as ContextAnnotation);
 
           // Update context buffer
-          logger.debug('Updating Context Buffer');
+
           dataStream.writeData({
             type: 'progress',
             label: 'context',
@@ -154,17 +138,12 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             summary,
             onFinish(resp) {
               if (resp.usage) {
-                logger.debug('selectContext token usage', JSON.stringify(resp.usage));
                 cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
                 cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
                 cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
               }
             },
           });
-
-          if (filteredFiles) {
-            logger.debug(`files in context : ${JSON.stringify(Object.keys(filteredFiles))}`);
-          }
 
           dataStream.writeMessageAnnotation({
             type: 'codeContext',
@@ -186,16 +165,11 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             order: progressCounter++,
             message: 'Code Files Selected',
           } satisfies ProgressAnnotation);
-
-          // logger.debug('Code Files Selected');
         }
 
         const options: StreamingOptions = {
-          supabaseConnection: supabase,
           toolChoice: 'none',
           onFinish: async ({ text: content, finishReason, usage }) => {
-            logger.debug('usage', JSON.stringify(usage));
-
             if (usage) {
               cumulativeUsage.completionTokens += usage.completionTokens || 0;
               cumulativeUsage.promptTokens += usage.promptTokens || 0;
@@ -228,10 +202,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               throw Error('Cannot continue message: Maximum segments reached');
             }
 
-            const switchesLeft = MAX_RESPONSE_SEGMENTS - stream.switches;
-
-            logger.info(`Reached max token limit (${MAX_TOKENS}): Continuing message (${switchesLeft} switches left)`);
-
             const lastUserMessage = messages.filter((x) => x.role == 'user').slice(-1)[0];
             const { model, provider } = extractPropertiesFromMessage(lastUserMessage);
             messages.push({ id: generateId(), role: 'assistant', content });
@@ -263,7 +233,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               for await (const part of result.fullStream) {
                 if (part.type === 'error') {
                   const error: any = part.error;
-                  logger.error(`${error}`);
+                  console.log(`${error}`);
 
                   return;
                 }
@@ -302,7 +272,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           for await (const part of result.fullStream) {
             if (part.type === 'error') {
               const error: any = part.error;
-              logger.error(`${error}`);
+              console.log(`${error}`);
 
               return;
             }
@@ -359,7 +329,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       },
     });
   } catch (error: any) {
-    logger.error(error);
+    console.log(error);
 
     if (error.message?.includes('API key')) {
       throw new Response('Invalid or missing API key', {

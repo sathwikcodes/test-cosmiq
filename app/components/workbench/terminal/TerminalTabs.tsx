@@ -7,9 +7,6 @@ import { themeStore } from '~/lib/stores/theme';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { Terminal, type TerminalRef } from './Terminal';
-import { createScopedLogger } from '~/utils/logger';
-
-const logger = createScopedLogger('Terminal');
 
 const MAX_TERMINALS = 3;
 export const DEFAULT_TERMINAL_SIZE = 25;
@@ -142,8 +139,6 @@ export const TerminalTabs = memo(() => {
           </div>
           {Array.from({ length: terminalCount + 1 }, (_, index) => {
             const isActive = activeTerminal === index;
-
-            logger.debug(`Starting bolt terminal [${index}]`);
 
             if (index == 0) {
               return (

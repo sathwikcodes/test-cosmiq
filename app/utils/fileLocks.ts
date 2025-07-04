@@ -4,9 +4,6 @@ import {
   isFolderLocked as isFolderLockedInternal,
   isPathInLockedFolder,
 } from '~/lib/persistence/lockedFiles';
-import { createScopedLogger } from './logger';
-
-const logger = createScopedLogger('FileLocks');
 
 /**
  * Get the current chat ID from the URL
@@ -26,7 +23,7 @@ export function getCurrentChatId(): string {
     // Return a default chat ID if none is found
     return 'default';
   } catch (error) {
-    logger.error('Failed to get current chat ID', error);
+    console.log('Failed to get current chat ID', error);
     return 'default';
   }
 }
@@ -55,7 +52,7 @@ export function isFileLocked(filePath: string, chatId?: string): { locked: boole
 
     return result;
   } catch (error) {
-    logger.error('Failed to check if file is locked', error);
+    console.log('Failed to check if file is locked', error);
     return { locked: false };
   }
 }
@@ -73,7 +70,7 @@ export function isFolderLocked(folderPath: string, chatId?: string): { locked: b
     // Use the internal function from lockedFiles.ts
     return isFolderLockedInternal(currentChatId, folderPath);
   } catch (error) {
-    logger.error('Failed to check if folder is locked', error);
+    console.log('Failed to check if folder is locked', error);
     return { locked: false };
   }
 }
@@ -90,7 +87,7 @@ export function hasLockedItems(chatId?: string): boolean {
 
     return lockedItems.some((item) => item.chatId === currentChatId);
   } catch (error) {
-    logger.error('Failed to check for locked items', error);
+    console.log('Failed to check for locked items', error);
     return false;
   }
 }
