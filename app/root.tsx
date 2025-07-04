@@ -42,10 +42,10 @@ export const links: LinksFunction = () => [
 ];
 
 const inlineThemeCode = stripIndents`
-  setCosmiqTheme();
+  setboltTheme();
 
-  function setCosmiqTheme() {
-    let theme = localStorage.getItem('cosmiq_theme');
+  function setboltTheme() {
+    let theme = localStorage.getItem('bolt_theme');
 
     if (!theme) {
       theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

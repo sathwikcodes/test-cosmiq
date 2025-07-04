@@ -5,13 +5,13 @@ import type { FileMap } from '~/lib/stores/files';
 import { classNames } from '~/utils/classNames';
 import { WORK_DIR } from '~/utils/constants';
 import { cubicEasingFn } from '~/utils/easings';
-import FileTree from './FileTree';
+import { FileTree } from './FileTree';
 
 const WORK_DIR_REGEX = new RegExp(`^${WORK_DIR.split('/').slice(0, -1).join('/').replaceAll('/', '\\/')}/`);
 
 interface FileBreadcrumbProps {
   files?: FileMap;
-  pathSegments?: string[];
+  pathSegments?: { name: string; path: string }[];
   onFileSelect?: (filePath: string) => void;
 }
 
@@ -71,7 +71,10 @@ export const FileBreadcrumb = memo<FileBreadcrumbProps>(({ files, pathSegments =
       {pathSegments.map((segment, index) => {
         const isLast = index === pathSegments.length - 1;
 
-        const path = pathSegments.slice(0, index).join('/');
+        const path = pathSegments
+          .slice(0, index)
+          .map((s) => s.name)
+          .join('/');
 
         if (!WORK_DIR_REGEX.test(path)) {
           return null;
@@ -95,7 +98,7 @@ export const FileBreadcrumb = memo<FileBreadcrumbProps>(({ files, pathSegments =
                   onClick={() => handleSegmentClick(index)}
                 >
                   {isLast && <div className="i-ph:file-duotone" />}
-                  {segment}
+                  {segment.name}
                 </span>
               </DropdownMenu.Trigger>
               {index > 0 && !isLast && <span className="i-ph:caret-right inline-block mx-1" />}
@@ -124,8 +127,8 @@ export const FileBreadcrumb = memo<FileBreadcrumbProps>(({ files, pathSegments =
                               rootFolder={path}
                               collapsed
                               allowFolderSelection
-                              selectedFile={`${path}/${segment}`}
-                              onFileSelect={(filePath) => {
+                              selectedFile={`${path}/${segment.name}`}
+                              onFileSelect={(filePath: string) => {
                                 setActiveIndex(null);
                                 onFileSelect?.(filePath);
                               }}

@@ -13,7 +13,6 @@ import {
 import { PanelHeader } from '~/components/ui/PanelHeader';
 import { PanelHeaderButton } from '~/components/ui/PanelHeaderButton';
 import type { FileMap } from '~/lib/stores/files';
-import type { FileHistory } from '~/types/actions';
 import { themeStore } from '~/lib/stores/theme';
 import { WORK_DIR } from '~/utils/constants';
 import { isMobile } from '~/utils/mobile';
@@ -21,9 +20,7 @@ import { FileBreadcrumb } from './FileBreadcrumb';
 import { FileTree } from './FileTree';
 import { DEFAULT_TERMINAL_SIZE, TerminalTabs } from './terminal/TerminalTabs';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { Search } from './Search';
 import { classNames } from '~/utils/classNames';
-import { LockManager } from './LockManager';
 
 interface EditorPanelProps {
   files?: FileMap;
@@ -31,7 +28,6 @@ interface EditorPanelProps {
   editorDocument?: EditorDocument;
   selectedFile?: string | undefined;
   isStreaming?: boolean;
-  fileHistory?: Record<string, FileHistory>;
   onEditorChange?: OnEditorChange;
   onEditorScroll?: OnEditorScroll;
   onFileSelect?: (value?: string) => void;
@@ -41,8 +37,6 @@ interface EditorPanelProps {
 
 const DEFAULT_EDITOR_SIZE = 100 - DEFAULT_TERMINAL_SIZE;
 
-const editorSettings: EditorSettings = { tabSize: 2 };
-
 export const EditorPanel = memo(
   ({
     files,
@@ -50,7 +44,6 @@ export const EditorPanel = memo(
     editorDocument,
     selectedFile,
     isStreaming,
-    fileHistory,
     onFileSelect,
     onEditorChange,
     onEditorScroll,
@@ -60,22 +53,19 @@ export const EditorPanel = memo(
     const theme = useStore(themeStore);
     const showTerminal = useStore(workbenchStore.showTerminal);
 
+    const editorSettings: EditorSettings = { tabSize: 2 };
+
     const activeFileSegments = useMemo(() => {
-      if (!editorDocument) {
+      if (!selectedFile) {
         return undefined;
       }
 
-      return editorDocument.filePath.split('/');
-    }, [editorDocument]);
+      return selectedFile.split('/').map((segment) => ({ name: segment, path: segment }));
+    }, [selectedFile]);
 
     const activeFileUnsaved = useMemo(() => {
-      if (!editorDocument || !unsavedFiles) {
-        return false;
-      }
-
-      // Make sure unsavedFiles is a Set before calling has()
-      return unsavedFiles instanceof Set && unsavedFiles.has(editorDocument.filePath);
-    }, [editorDocument, unsavedFiles]);
+      return selectedFile ? unsavedFiles?.has(selectedFile) : false;
+    }, [selectedFile, unsavedFiles]);
 
     return (
       <PanelGroup direction="vertical">
@@ -95,22 +85,6 @@ export const EditorPanel = memo(
                         >
                           Files
                         </Tabs.Trigger>
-                        <Tabs.Trigger
-                          value="search"
-                          className={classNames(
-                            'h-full bg-transparent hover:bg-bolt-elements-background-depth-3 py-0.5 px-2 rounded-lg text-sm font-medium text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary data-[state=active]:text-bolt-elements-textPrimary',
-                          )}
-                        >
-                          Search
-                        </Tabs.Trigger>
-                        <Tabs.Trigger
-                          value="locks"
-                          className={classNames(
-                            'h-full bg-transparent hover:bg-bolt-elements-background-depth-3 py-0.5 px-2 rounded-lg text-sm font-medium text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary data-[state=active]:text-bolt-elements-textPrimary',
-                          )}
-                        >
-                          Locks
-                        </Tabs.Trigger>
                       </Tabs.List>
                     </div>
                   </PanelHeader>
@@ -121,19 +95,10 @@ export const EditorPanel = memo(
                       files={files}
                       hideRoot
                       unsavedFiles={unsavedFiles}
-                      fileHistory={fileHistory}
                       rootFolder={WORK_DIR}
                       selectedFile={selectedFile}
                       onFileSelect={onFileSelect}
                     />
-                  </Tabs.Content>
-
-                  <Tabs.Content value="search" className="flex-grow overflow-auto focus-visible:outline-none">
-                    <Search />
-                  </Tabs.Content>
-
-                  <Tabs.Content value="locks" className="flex-grow overflow-auto focus-visible:outline-none">
-                    <LockManager />
                   </Tabs.Content>
                 </Tabs.Root>
               </div>

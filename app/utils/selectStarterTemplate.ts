@@ -58,7 +58,7 @@ Instructions:
 5. If no perfect match exists, recommend the closest option
 
 Important: Provide only the selection tags in your response, no additional text.
-MOST IMPORTANT: YOU DONT HAVE TIME TO THINK JUST START RESPONDING BASED ON HUNCH 
+MOST IMPORTANT: YOU DONT HAVE TIME TO THINK JUST START RESPONDING BASED ON HUNCH
 `;
 
 const templates: Template[] = STARTER_TEMPLATES.filter((t) => !t.name.includes('shadcn'));
@@ -88,21 +88,39 @@ export const selectStarterTemplate = async (options: { message: string; model: s
     provider,
     system: starterTemplateSelectionPrompt(templates),
   };
-  const response = await fetch('/api/llmcall', {
-    method: 'POST',
-    body: JSON.stringify(requestBody),
-  });
-  const respJson: { text: string } = await response.json();
-  console.log(respJson);
 
-  const { text } = respJson;
-  const selectedTemplate = parseSelectedTemplate(text);
+  try {
+    const response = await fetch('/api/llmcall', {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+    });
 
-  if (selectedTemplate) {
-    return selectedTemplate;
-  } else {
-    console.log('No template selected, using blank template');
+    if (!response.ok) {
+      console.log('Template selection API failed, using blank template');
+      return {
+        template: 'blank',
+        title: '',
+      };
+    }
 
+    const respJson: { text: string } = await response.json();
+    console.log(respJson);
+
+    const { text } = respJson;
+    const selectedTemplate = parseSelectedTemplate(text);
+
+    if (selectedTemplate) {
+      return selectedTemplate;
+    } else {
+      console.log('No template selected, using blank template');
+
+      return {
+        template: 'blank',
+        title: '',
+      };
+    }
+  } catch (error) {
+    console.log('Template selection failed, using blank template:', error);
     return {
       template: 'blank',
       title: '',

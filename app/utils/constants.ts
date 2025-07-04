@@ -14,13 +14,12 @@ const llmManager = LLMManager.getInstance(import.meta.env);
 export const PROVIDER_LIST = llmManager.getAllProviders();
 export const DEFAULT_PROVIDER = llmManager.getDefaultProvider();
 
-export const providerBaseUrlEnvKeys: Record<string, { baseUrlKey?: string; apiTokenKey?: string }> = {};
-PROVIDER_LIST.forEach((provider) => {
-  providerBaseUrlEnvKeys[provider.name] = {
-    baseUrlKey: provider.config.baseUrlKey,
-    apiTokenKey: provider.config.apiTokenKey,
-  };
-});
+// Only Anthropic is supported
+export const providerBaseUrlEnvKeys: Record<string, { baseUrlKey?: string; apiTokenKey?: string }> = {
+  Anthropic: {
+    apiTokenKey: 'ANTHROPIC_API_KEY',
+  },
+};
 
 export const STARTER_TEMPLATES: Template[] = [
   {

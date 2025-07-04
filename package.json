@@ -1,5 +1,5 @@
 {
-  "name": "cosmiq",
+  "name": "bolt",
   "description": "A Web3-inspired builder platform that generates working web applications from natural language prompts",
   "private": true,
   "license": "MIT",
@@ -7,8 +7,8 @@
   "type": "module",
   "version": "1.0.0",
   "author": {
-    "name": "Cosmiq team",
-    "email": "maintainers@cosmiq.dev"
+    "name": "bolt team",
+    "email": "maintainers@bolt.dev"
   },
   "scripts": {
     "deploy": "npm run build && wrangler pages deploy",
@@ -22,9 +22,9 @@
     "start:unix": "bindings=$(./bindings.sh) && wrangler pages dev ./build/client $bindings",
     "start": "node -e \"const { spawn } = require('child_process'); const isWindows = process.platform === 'win32'; const cmd = isWindows ? 'npm run start:windows' : 'npm run start:unix'; const child = spawn(cmd, { shell: true, stdio: 'inherit' }); child.on('exit', code => process.exit(code));\"",
     "dockerstart": "bindings=$(./bindings.sh) && wrangler pages dev ./build/client $bindings --ip 0.0.0.0 --port 5173 --no-show-interactive-dev-session",
-    "dockerrun": "docker run -it -d --name cosmiq-live -p 5173:5173 --env-file .env.local cosmiq",
-    "dockerbuild:prod": "docker build -t cosmiq:production -t cosmiq:latest --target cosmiq-production .",
-    "dockerbuild": "docker build -t cosmiq:development -t cosmiq:latest --target cosmiq-development .",
+    "dockerrun": "docker run -it -d --name bolt-live -p 5173:5173 --env-file .env.local bolt",
+    "dockerbuild:prod": "docker build -t bolt:production -t bolt:latest --target bolt-production .",
+    "dockerbuild": "docker build -t bolt:development -t bolt:latest --target bolt-development .",
     "typecheck": "tsc",
     "typegen": "wrangler types",
     "preview": "pnpm run build && pnpm run start",

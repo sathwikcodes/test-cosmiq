@@ -221,6 +221,13 @@ export const ChatImpl = memo(
     }, []);
 
     useEffect(() => {
+      // Ensure workbench shows when chat starts
+      if (chatStarted) {
+        workbenchStore.showWorkbench.set(true);
+      }
+    }, [chatStarted]);
+
+    useEffect(() => {
       processSampledMessages({
         messages,
         initialMessages,
@@ -269,13 +276,29 @@ export const ChatImpl = memo(
         return;
       }
 
-      await Promise.all([
-        animate('#examples', { opacity: 0, display: 'none' }, { duration: 0.1 }),
-        animate('#intro', { opacity: 0, flex: 1 }, { duration: 0.2, ease: cubicEasingFn }),
-      ]);
+      // Try to animate elements if they exist, but don't fail if they don't
+      try {
+        const examplesElement = document.querySelector('#examples');
+        const introElement = document.querySelector('#intro');
+
+        const animations = [];
+
+        if (examplesElement) {
+          animations.push(animate('#examples', { opacity: 0, display: 'none' }, { duration: 0.1 }));
+        }
+
+        if (introElement) {
+          animations.push(animate('#intro', { opacity: 0, flex: 1 }, { duration: 0.2, ease: cubicEasingFn }));
+        }
+
+        if (animations.length > 0) {
+          await Promise.all(animations);
+        }
+      } catch (error) {
+        console.log('Animation failed, but continuing with chat start:', error);
+      }
 
       chatStore.setKey('started', true);
-
       setChatStarted(true);
     };
 

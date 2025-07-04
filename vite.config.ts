@@ -57,7 +57,7 @@ const getPackageJson = () => {
     };
   } catch {
     return {
-      name: 'cosmiq',
+      name: 'bolt',
       description: 'A DIY LLM interface',
       license: 'MIT',
       dependencies: {},

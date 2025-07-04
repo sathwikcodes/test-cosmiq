@@ -1,105 +1,89 @@
-import { json } from '@remix-run/cloudflare';
+import { type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/cloudflare';
 import { LLMManager } from '~/lib/modules/llm/manager';
-import type { ModelInfo } from '~/lib/modules/llm/types';
-import type { ProviderInfo } from '~/types/model';
 import { getApiKeysFromCookie, getProviderSettingsFromCookie } from '~/lib/api/cookies';
 
-interface ModelsResponse {
-  modelList: ModelInfo[];
-  providers: ProviderInfo[];
-  defaultProvider: ProviderInfo;
-}
+export async function loader({ context, request }: LoaderFunctionArgs) {
+  const env = context.cloudflare?.env as any;
+  const llmManager = LLMManager.getInstance(env);
 
-let cachedProviders: ProviderInfo[] | null = null;
-let cachedDefaultProvider: ProviderInfo | null = null;
-
-function getProviderInfo(llmManager: LLMManager) {
-  if (!cachedProviders) {
-    cachedProviders = llmManager.getAllProviders().map((provider) => ({
-      name: provider.name,
-      staticModels: provider.staticModels,
-      getApiKeyLink: provider.getApiKeyLink,
-      labelForGetApiKey: provider.labelForGetApiKey,
-      icon: provider.icon,
-    }));
-  }
-
-  if (!cachedDefaultProvider) {
-    const defaultProvider = llmManager.getDefaultProvider();
-    cachedDefaultProvider = {
-      name: defaultProvider.name,
-      staticModels: defaultProvider.staticModels,
-      getApiKeyLink: defaultProvider.getApiKeyLink,
-      labelForGetApiKey: defaultProvider.labelForGetApiKey,
-      icon: defaultProvider.icon,
-    };
-  }
-
-  return { providers: cachedProviders, defaultProvider: cachedDefaultProvider };
-}
-
-export async function loader({
-  request,
-  params,
-  context,
-}: {
-  request: Request;
-  params: { provider?: string };
-  context: {
-    cloudflare?: {
-      env: Record<string, string>;
-    };
-  };
-}): Promise<Response> {
-  const llmManager = LLMManager.getInstance(context.cloudflare?.env);
-
-  // Get client side maintained API keys and provider settings from cookies
+  // Get API keys and settings from cookies for GET requests
   const cookieHeader = request.headers.get('Cookie');
   const apiKeys = getApiKeysFromCookie(cookieHeader);
   const providerSettings = getProviderSettingsFromCookie(cookieHeader);
 
-  const { providers, defaultProvider } = getProviderInfo(llmManager);
-
-  let modelList: ModelInfo[] = [];
-
   try {
-    if (params.provider) {
-      // Only update models for the specific provider
-      const provider = llmManager.getProvider(params.provider);
+    const models = await llmManager.updateModelList({
+      apiKeys,
+      providerSettings,
+      serverEnv: env,
+    });
 
-      if (provider) {
-        modelList = await llmManager.getModelListFromProvider(provider, {
-          apiKeys,
-          providerSettings,
-          serverEnv: context.cloudflare?.env,
-        });
-      }
-    } else {
-      // Update all models
-      modelList = await llmManager.updateModelList({
-        apiKeys,
-        providerSettings,
-        serverEnv: context.cloudflare?.env,
-      });
-    }
-  } catch (error) {
-    console.error('Error fetching models:', error);
-    // Return static models only if dynamic model fetching fails
-    modelList = llmManager.getStaticModelList();
-  }
+    return Response.json({
+      modelList: models,
+      providers: [
+        {
+          name: 'Anthropic',
+          staticModels: llmManager.getStaticModelList(),
+          getApiKeyLink: 'https://console.anthropic.com/settings/keys',
+          labelForGetApiKey: 'Get Anthropic API Key',
+          icon: 'i-simple-icons:anthropic',
+        },
+      ],
+      defaultProvider: {
+        name: 'Anthropic',
+        staticModels: llmManager.getStaticModelList(),
+        getApiKeyLink: 'https://console.anthropic.com/settings/keys',
+        labelForGetApiKey: 'Get Anthropic API Key',
+        icon: 'i-simple-icons:anthropic',
+      },
+    });
+  } catch (error: any) {
+    console.error('Error in models loader:', error);
 
-  // Filter out providers that don't have API keys configured
-  if (!apiKeys || Object.keys(apiKeys).length === 0) {
-    // Only return static models if no API keys are configured
-    modelList = modelList.filter((model) => {
-      const provider = llmManager.getProvider(model.provider);
-      return provider && provider.staticModels && provider.staticModels.length > 0;
+    // Return static Anthropic models as fallback
+    const staticModels = llmManager.getStaticModelList();
+    return Response.json({
+      modelList: staticModels,
+      providers: [
+        {
+          name: 'Anthropic',
+          staticModels: staticModels,
+          getApiKeyLink: 'https://console.anthropic.com/settings/keys',
+          labelForGetApiKey: 'Get Anthropic API Key',
+          icon: 'i-simple-icons:anthropic',
+        },
+      ],
+      defaultProvider: {
+        name: 'Anthropic',
+        staticModels: staticModels,
+        getApiKeyLink: 'https://console.anthropic.com/settings/keys',
+        labelForGetApiKey: 'Get Anthropic API Key',
+        icon: 'i-simple-icons:anthropic',
+      },
     });
   }
+}
 
-  return json<ModelsResponse>({
-    modelList,
-    providers,
-    defaultProvider,
-  });
+export async function action({ context, request }: ActionFunctionArgs) {
+  const env = context.cloudflare?.env as any;
+  const formData = await request.formData();
+  const apiKeys = JSON.parse(formData.get('apiKeys') as string);
+  const settings = JSON.parse(formData.get('settings') as string);
+
+  const llmManager = LLMManager.getInstance(env);
+
+  try {
+    const models = await llmManager.updateModelList({
+      apiKeys,
+      providerSettings: settings,
+      serverEnv: env,
+    });
+
+    return Response.json(models);
+  } catch (error: any) {
+    console.error('Error updating model list:', error);
+
+    // Return static Anthropic models as fallback
+    return Response.json(llmManager.getStaticModelList());
+  }
 }

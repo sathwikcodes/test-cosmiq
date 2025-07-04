@@ -7,7 +7,7 @@ import { Header } from '~/components/header/Header';
 export const loader = () => json({});
 
 /**
- * Landing page component for Cosmiq
+ * Landing page component for bolt
  * A Web3-inspired builder platform that generates working web applications from natural language prompts
  */
 export default function Index() {

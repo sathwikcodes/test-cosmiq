@@ -247,6 +247,7 @@ const ActionList = memo(({ actions }: ActionListProps) => {
                   <a
                     onClick={(e) => {
                       e.preventDefault();
+                      workbenchStore.setShowWorkbench(true);
                       workbenchStore.currentView.set('preview');
                     }}
                     className="flex items-center w-full min-h-[28px]"

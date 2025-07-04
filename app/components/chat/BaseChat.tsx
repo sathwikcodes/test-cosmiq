@@ -10,26 +10,10 @@ import { Workbench } from '~/components/workbench/Workbench.client';
 import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
 import { Messages } from './Messages.client';
-// Inline getApiKeysFromCookies function
-function getApiKeysFromCookies() {
-  try {
-    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.split('=');
-      acc[key.trim()] = decodeURIComponent(value);
-      return acc;
-    }, {} as Record<string, string>);
-    return cookies.apiKeys ? JSON.parse(cookies.apiKeys) : {};
-  } catch {
-    return {};
-  }
-}
 import Cookies from 'js-cookie';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import styles from './BaseChat.module.scss';
-import { ImportButtons } from '~/components/chat/chatExportAndImport/ImportButtons';
-import { ExamplePrompts } from '~/components/chat/ExamplePrompts';
 import type { ProviderInfo } from '~/types/model';
-import StarterTemplates from './StarterTemplates';
 import type { ActionAlert } from '~/types/actions';
 import ChatAlert from './ChatAlert';
 import type { ModelInfo } from '~/lib/modules/llm/types';
@@ -42,6 +26,24 @@ import { StickToBottom, useStickToBottomContext } from '~/lib/hooks';
 import { ChatBox } from './ChatBox';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
+import { ImportButtons } from '~/components/chat/chatExportAndImport/ImportButtons';
+
+// Inline getApiKeysFromCookies function
+function getApiKeysFromCookies() {
+  try {
+    const cookies = document.cookie.split(';').reduce(
+      (acc, cookie) => {
+        const [key, value] = cookie.split('=');
+        acc[key.trim()] = decodeURIComponent(value);
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+    return cookies.apiKeys ? JSON.parse(cookies.apiKeys) : {};
+  } catch {
+    return {};
+  }
+}
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -348,7 +350,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   handleSendMessage={handleSendMessage}
                   enhancingPrompt={enhancingPrompt}
                   enhancePrompt={enhancePrompt}
-
                   chatStarted={chatStarted}
                   exportChat={exportChat}
                   qrModalOpen={qrModalOpen}
@@ -365,18 +366,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             </StickToBottom>
             <div className="flex flex-col justify-center">
               {!chatStarted && <div className="flex justify-center gap-2">{ImportButtons(importChat)}</div>}
-              <div className="flex flex-col gap-5">
-                {!chatStarted &&
-                  ExamplePrompts((event, messageInput) => {
-                    if (isStreaming) {
-                      handleStop?.();
-                      return;
-                    }
-
-                    handleSendMessage?.(event, messageInput);
-                  })}
-                {!chatStarted && <StarterTemplates />}
-              </div>
             </div>
           </div>
           <ClientOnly>

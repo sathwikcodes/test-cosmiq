@@ -1,5 +1,5 @@
 // Key for storing locked files in localStorage
-export const LOCKED_FILES_KEY = 'cosmiq.lockedFiles';
+export const LOCKED_FILES_KEY = 'bolt.lockedFiles';
 
 export interface LockedItem {
   chatId: string; // Chat ID to scope locks to a specific project

@@ -1,16 +1,15 @@
 import type { IProviderSetting } from '~/types/model';
 import { BaseProvider } from './base-provider';
-import type { ModelInfo, ProviderInfo } from './types';
-import * as providers from './registry';
+import type { ModelInfo } from './types';
+import { AnthropicProvider } from './registry';
 
 export class LLMManager {
   private static _instance: LLMManager;
-  private _providers: Map<string, BaseProvider> = new Map();
-  private _modelList: ModelInfo[] = [];
+  private _provider: BaseProvider;
   private readonly _env: any = {};
 
   private constructor(_env: Record<string, string>) {
-    this._registerProvidersFromDirectory();
+    this._provider = new AnthropicProvider();
     this._env = _env;
   }
 
@@ -21,54 +20,21 @@ export class LLMManager {
 
     return LLMManager._instance;
   }
+
   get env() {
     return this._env;
   }
 
-  private async _registerProvidersFromDirectory() {
-    try {
-      /*
-       * Dynamically import all files from the providers directory
-       * const providerModules = import.meta.glob('./providers/*.ts', { eager: true });
-       */
-
-      // Look for exported classes that extend BaseProvider
-      for (const exportedItem of Object.values(providers)) {
-        if (typeof exportedItem === 'function' && exportedItem.prototype instanceof BaseProvider) {
-          const provider = new exportedItem();
-
-          try {
-            this.registerProvider(provider);
-          } catch (error: any) {
-            console.log('Failed To Register Provider: ', provider.name, 'error:', error.message);
-          }
-        }
-      }
-    } catch (error) {
-      console.log('Error registering providers:', error);
-    }
-  }
-
-  registerProvider(provider: BaseProvider) {
-    if (this._providers.has(provider.name)) {
-      console.log(`Provider ${provider.name} is already registered. Skipping.`);
-      return;
-    }
-
-    this._providers.set(provider.name, provider);
-    this._modelList = [...this._modelList, ...provider.staticModels];
-  }
-
-  getProvider(name: string): BaseProvider | undefined {
-    return this._providers.get(name);
+  getProvider(): BaseProvider {
+    return this._provider;
   }
 
   getAllProviders(): BaseProvider[] {
-    return Array.from(this._providers.values());
+    return [this._provider];
   }
 
   getModelList(): ModelInfo[] {
-    return this._modelList;
+    return this._provider.staticModels;
   }
 
   async updateModelList(options: {
@@ -78,57 +44,33 @@ export class LLMManager {
   }): Promise<ModelInfo[]> {
     const { apiKeys, providerSettings, serverEnv } = options;
 
-    let enabledProviders = Array.from(this._providers.values()).map((p) => p.name);
-
-    if (providerSettings && Object.keys(providerSettings).length > 0) {
-      enabledProviders = enabledProviders.filter((p) => providerSettings[p].enabled);
+    // If no API keys are provided, return only static models
+    if (!apiKeys || !apiKeys['Anthropic']) {
+      return this.getStaticModelList();
     }
 
-    // Get dynamic models from all providers that support them
-    const dynamicModels = await Promise.all(
-      Array.from(this._providers.values())
-        .filter((provider) => enabledProviders.includes(provider.name))
-        .filter(
-          (provider): provider is BaseProvider & Required<Pick<ProviderInfo, 'getDynamicModels'>> =>
-            !!provider.getDynamicModels,
-        )
-        .map(async (provider) => {
-          const cachedModels = provider.getModelsFromCache(options);
+    try {
+      const dynamicModels =
+        (await this._provider.getDynamicModels?.(apiKeys, providerSettings?.['Anthropic'], serverEnv)) || [];
 
-          if (cachedModels) {
-            return cachedModels;
-          }
+      const staticModels = this._provider.staticModels || [];
+      const dynamicModelNames = dynamicModels.map((d) => d.name);
+      const filteredStaticModels = staticModels.filter((m) => !dynamicModelNames.includes(m.name));
 
-          const dynamicModels = await provider
-            .getDynamicModels(apiKeys, providerSettings?.[provider.name], serverEnv)
-            .then((models) => {
-              provider.storeDynamicModels(options, models);
+      const modelList = [...dynamicModels, ...filteredStaticModels];
+      modelList.sort((a, b) => a.name.localeCompare(b.name));
 
-              return models;
-            })
-            .catch((err) => {
-              console.log(`Error getting dynamic models ${provider.name} :`, err);
-              return [];
-            });
-
-          return dynamicModels;
-        }),
-    );
-    const staticModels = Array.from(this._providers.values()).flatMap((p) => p.staticModels || []);
-    const dynamicModelsFlat = dynamicModels.flat();
-    const dynamicModelKeys = dynamicModelsFlat.map((d) => `${d.name}-${d.provider}`);
-    const filteredStaticModesl = staticModels.filter((m) => !dynamicModelKeys.includes(`${m.name}-${m.provider}`));
-
-    // Combine static and dynamic models
-    const modelList = [...dynamicModelsFlat, ...filteredStaticModesl];
-    modelList.sort((a, b) => a.name.localeCompare(b.name));
-    this._modelList = modelList;
-
-    return modelList;
+      return modelList;
+    } catch (err) {
+      console.log(`Error getting dynamic models from Anthropic:`, err);
+      return this.getStaticModelList();
+    }
   }
-  getStaticModelList() {
-    return [...this._providers.values()].flatMap((p) => p.staticModels || []);
+
+  getStaticModelList(): ModelInfo[] {
+    return this._provider.staticModels || [];
   }
+
   async getModelListFromProvider(
     providerArg: BaseProvider,
     options: {
@@ -137,65 +79,23 @@ export class LLMManager {
       serverEnv?: Record<string, string>;
     },
   ): Promise<ModelInfo[]> {
-    const provider = this._providers.get(providerArg.name);
-
-    if (!provider) {
-      throw new Error(`Provider ${providerArg.name} not found`);
+    // Only support Anthropic provider
+    if (providerArg.name !== 'Anthropic') {
+      throw new Error(`Only Anthropic provider is supported`);
     }
 
-    const staticModels = provider.staticModels || [];
-
-    if (!provider.getDynamicModels) {
-      return staticModels;
-    }
-
-    const { apiKeys, providerSettings, serverEnv } = options;
-
-    const cachedModels = provider.getModelsFromCache({
-      apiKeys,
-      providerSettings,
-      serverEnv,
-    });
-
-    if (cachedModels) {
-      return [...cachedModels, ...staticModels];
-    }
-
-    const dynamicModels = await provider
-      .getDynamicModels?.(apiKeys, providerSettings?.[provider.name], serverEnv)
-      .then((models) => {
-        provider.storeDynamicModels(options, models);
-
-        return models;
-      })
-      .catch((err) => {
-        console.log(`Error getting dynamic models ${provider.name} :`, err);
-        return [];
-      });
-    const dynamicModelsName = dynamicModels.map((d) => d.name);
-    const filteredStaticList = staticModels.filter((m) => !dynamicModelsName.includes(m.name));
-    const modelList = [...dynamicModels, ...filteredStaticList];
-    modelList.sort((a, b) => a.name.localeCompare(b.name));
-
-    return modelList;
+    return this.updateModelList(options);
   }
-  getStaticModelListFromProvider(providerArg: BaseProvider) {
-    const provider = this._providers.get(providerArg.name);
 
-    if (!provider) {
-      throw new Error(`Provider ${providerArg.name} not found`);
+  getStaticModelListFromProvider(providerArg: BaseProvider): ModelInfo[] {
+    if (providerArg.name !== 'Anthropic') {
+      throw new Error(`Only Anthropic provider is supported`);
     }
 
-    return [...(provider.staticModels || [])];
+    return this.getStaticModelList();
   }
 
   getDefaultProvider(): BaseProvider {
-    const firstProvider = this._providers.values().next().value;
-
-    if (!firstProvider) {
-      throw new Error('No providers registered');
-    }
-
-    return firstProvider;
+    return this._provider;
   }
 }

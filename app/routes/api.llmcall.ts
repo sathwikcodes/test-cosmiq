@@ -51,6 +51,14 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
   const apiKeys = getApiKeysFromCookie(cookieHeader);
   const providerSettings = getProviderSettingsFromCookie(cookieHeader);
 
+  // Check if API key is available for the requested provider
+  if (!apiKeys || !apiKeys[providerName]) {
+    throw new Response('API key not configured for provider: ' + providerName, {
+      status: 401,
+      statusText: 'Unauthorized',
+    });
+  }
+
   if (streamOutput) {
     try {
       const result = await streamText({
